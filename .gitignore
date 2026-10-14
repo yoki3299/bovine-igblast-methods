@@ -1,0 +1,29 @@
+# ---- never commit raw data / large files (this is a docs-only repo) ----
+*.tsv
+*.csv
+*.fasta
+*.fa
+*.fastq
+*.fq
+*.gz
+*.zip
+*.bam
+*.sam
+*.ndm*
+*.aux
+# BLAST database shards
+*.nhr
+*.nin
+*.nsq
+*.nog
+*.nsd
+*.nsi
+*.njs
+*.phr
+*.pin
+*.psq
+# structures (show as screenshots instead)
+*.pdb
+*.cif
+# macOS
+.DS_Store

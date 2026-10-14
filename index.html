@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bovine IgBLAST Setup</title>
+<meta name="description" content="A reproducible procedure for configuring NCBI IgBLAST to annotate a custom organism (Bos taurus): germline reference, BLAST databases, and the internal_data annotation files.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f6f8fa; --surface-2:#eef2f6; --fg:#1e293b; --muted:#64748b;
+    --border:#e2e8f0; --accent:#0d9488; --accent-fg:#0d9488; --accent-soft:#ccfbf1;
+    --warn:#b45309; --warn-soft:#fef3c7; --code-fg:#0f172a; --shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.05);
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#0f172a; --surface:#1e293b; --surface-2:#172033; --fg:#e2e8f0; --muted:#94a3b8;
+    --border:#334155; --accent:#2dd4bf; --accent-fg:#5eead4; --accent-soft:#134e4a;
+    --warn:#fbbf24; --warn-soft:#3f2d10; --code-fg:#e2e8f0; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a; --surface:#1e293b; --surface-2:#172033; --fg:#e2e8f0; --muted:#94a3b8;
+    --border:#334155; --accent:#2dd4bf; --accent-fg:#5eead4; --accent-soft:#134e4a;
+    --warn:#fbbf24; --warn-soft:#3f2d10; --code-fg:#e2e8f0; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);}
+  .layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:0;max-width:1180px;margin:0 auto;}
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:34px 20px 34px 28px;border-right:1px solid var(--border);}
+  .toc .brand{font-weight:700;font-size:.95rem;letter-spacing:.01em;margin-bottom:2px}
+  .toc .brand span{color:var(--accent-fg)}
+  .toc .sub{color:var(--muted);font-size:.78rem;margin-bottom:20px}
+  .toc a{display:block;color:var(--muted);text-decoration:none;font-size:.86rem;
+    padding:5px 10px;border-radius:7px;border-left:2px solid transparent;transition:.15s}
+  .toc a:hover{color:var(--fg);background:var(--surface)}
+  .toc a.active{color:var(--accent-fg);background:var(--accent-soft);border-left-color:var(--accent);font-weight:500}
+  .toc .num{display:inline-block;width:1.4em;color:var(--accent-fg);font-variant-numeric:tabular-nums;font-weight:600}
+  main{padding:44px clamp(18px,5vw,64px) 120px;min-width:0}
+  header.page{margin-bottom:10px}
+  h1{font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;margin:0 0 10px;text-wrap:balance;letter-spacing:-.02em}
+  .lede{color:var(--muted);font-size:1.02rem;max-width:68ch;margin:0 0 6px}
+  .lede a{color:var(--accent-fg)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 6px}
+  .pill{font-size:.76rem;background:var(--surface);border:1px solid var(--border);color:var(--muted);
+    padding:3px 11px;border-radius:999px;font-weight:500}
+  .pill b{color:var(--fg);font-weight:600}
+  h2{font-size:1.32rem;margin:52px 0 6px;padding-top:14px;letter-spacing:-.01em;scroll-margin-top:24px}
+  h2 .n{color:var(--accent-fg);font-variant-numeric:tabular-nums;margin-right:.5em;font-weight:700}
+  h3{font-size:1.02rem;margin:26px 0 4px;color:var(--fg)}
+  p{max-width:72ch}
+  a{color:var(--accent-fg)}
+  hr{border:none;border-top:1px solid var(--border);margin:8px 0}
+  code{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em;
+    background:var(--surface-2);padding:1.5px 6px;border-radius:5px;color:var(--code-fg)}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 18px;
+    overflow:auto;margin:14px 0;box-shadow:var(--shadow)}
+  pre code{background:none;padding:0;font-size:.82rem;line-height:1.6;color:var(--code-fg)}
+  .lang{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+    font-family:Inter,sans-serif;margin:-2px 0 9px;font-weight:600}
+  table{border-collapse:collapse;margin:16px 0;font-size:.9rem;width:100%}
+  th,td{border:1px solid var(--border);padding:7px 13px;text-align:left;vertical-align:top}
+  th{background:var(--surface);font-weight:600}
+  tbody tr:nth-child(even){background:var(--surface)}
+  ul,ol{max-width:72ch;padding-left:1.3em}
+  li{margin:4px 0}
+  strong{font-weight:600}
+  .callout{display:flex;gap:11px;background:var(--warn-soft);border:1px solid var(--warn);border-left-width:4px;
+    border-radius:9px;padding:13px 16px;margin:16px 0;font-size:.92rem;max-width:72ch}
+  .callout .ic{flex:none;font-size:1.05rem;line-height:1.4}
+  .callout b{color:var(--warn)}
+  figure{margin:20px 0;max-width:760px}
+  .shot{border:2px dashed var(--border);border-radius:12px;background:var(--surface);
+    min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:7px;color:var(--muted);text-align:center;padding:26px 18px}
+  .shot .cam{font-size:1.7rem;opacity:.7}
+  .shot .slot{font-size:.74rem;font-family:"JetBrains Mono",monospace;background:var(--surface-2);
+    padding:2px 9px;border-radius:6px;color:var(--accent-fg)}
+  figure img{max-width:100%;height:auto;border:1px solid var(--border);border-radius:12px;display:block;box-shadow:var(--shadow)}
+  figcaption{color:var(--muted);font-size:.84rem;margin-top:9px}
+  footer{border-top:1px solid var(--border);margin-top:70px;padding-top:22px;color:var(--muted);font-size:.84rem}
+  footer a{color:var(--accent-fg)}
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr}
+    .toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:22px 20px;display:block}
+    .toc .links{display:flex;flex-wrap:wrap;gap:4px}
+    .toc a{border-left:none;border:1px solid var(--border);padding:4px 9px}
+    .toc a.active{border-color:var(--accent)}
+    main{padding:28px 20px 90px}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Bovine <span>IgBLAST</span></div>
+    <div class="sub">custom organism setup</div>
+    <div class="links">
+      <a href="#s0"><span class="num">0</span>Software &amp; versions</a>
+      <a href="#s1"><span class="num">1</span>Install IgBLAST</a>
+      <a href="#s2"><span class="num">2</span>Germline V/D/J</a>
+      <a href="#s3"><span class="num">3</span>Search databases</a>
+      <a href="#s4"><span class="num">4</span>Annotation files</a>
+      <a href="#s5"><span class="num">5</span>Place &amp; point</a>
+      <a href="#s6"><span class="num">6</span>Run IgBLAST</a>
+      <a href="#notes"><span class="num">&#9432;</span>Notes &amp; caveats</a>
+    </div>
+  </nav>
+
+  <main>
+  <header class="page">
+    <h1>Setting up IgBLAST for a custom organism (bovine)</h1>
+    <p class="lede">A reproducible procedure for configuring NCBI IgBLAST to annotate a non-model
+      organism (<em>Bos taurus</em>), following the official
+      <a href="https://ncbi.github.io/igblast/cook/How-to-set-up.html" target="_blank" rel="noopener">custom-organism protocol</a>.
+      IgBLAST ships with built-in support for human, mouse, rat, rabbit and rhesus monkey only.</p>
+    <div class="meta">
+      <span class="pill">custom organisms need <b>IgBLAST &ge; 1.16</b></span>
+      <span class="pill">custom FWR/CDR needs <b>igblastn &ge; 1.20</b></span>
+      <span class="pill"><b><code>$WORK</code></b> = project dir; data under <b><code>$WORK/igblast/</code></b></span>
+    </div>
+  </header>
+
+  <!-- ================= 0 ================= -->
+  <h2 id="s0"><span class="n">0</span>Software and versions</h2>
+  <table>
+    <thead><tr><th>Tool</th><th>Version used</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td><code>igblastn</code></td><td>1.22.0</td><td>bioconda</td></tr>
+      <tr><td><code>makeblastdb</code> (BLAST+)</td><td>2.17.0</td><td>bioconda</td></tr>
+      <tr><td>Python (+ Biopython)</td><td>3.x</td><td>conda-forge</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================= 1 ================= -->
+  <h2 id="s1"><span class="n">1</span>Install IgBLAST (via conda)</h2>
+  <pre><span class="lang">bash</span><code># dedicated environment with IgBLAST, BLAST+ and Biopython
+conda create -n igblast -c conda-forge -c bioconda igblast blast biopython
+conda activate igblast
+
+# verify
+igblastn -version          # expect: igblast 1.22.0
+makeblastdb -version       # expect: makeblastdb 2.x</code></pre>
+  <p>The bioconda <code>igblast</code> package installs the binaries plus the built-in data
+    (<code>internal_data/</code>, <code>optional_file/</code>) under <code>$CONDA_PREFIX/share/igblast/</code>;
+    the custom organism is added there in Step&nbsp;5. <code>makeblastdb</code> comes from the separate
+    <code>blast</code> package. Both tools resolve only after <code>conda activate igblast</code>.</p>
+  <figure>
+    <img src="images/version_check.png" alt="igblastn and makeblastdb version output inside the igblast conda environment">
+    <figcaption>Version check inside the <code>igblast</code> env: <code>igblastn 1.22.0</code> and <code>makeblastdb 2.17.0+</code>.
+      In <code>(base)</code> the <code>igblastn</code> binary is not on PATH, so activate the env first.</figcaption>
+  </figure>
+
+  <!-- ================= 2 ================= -->
+  <h2 id="s2"><span class="n">2</span>Obtain and prepare the germline V, D, J sequences (IMGT)</h2>
+  <p>Download bovine IGHV, IGHD and IGHJ from
+    <a href="http://www.imgt.org/vquest/refseqh.html" target="_blank" rel="noopener">IMGT</a>,
+    one <strong>IMGT-gapped</strong> FASTA per class: <code>IGHV.fasta</code> (28 seqs),
+    <code>IGHD.fasta</code> (23), <code>IGHJ.fasta</code> (18). The download includes pseudogenes.
+    IMGT records each gene's functionality in <strong>field&nbsp;4</strong> of the header: <code>F</code> (functional),
+    <code>ORF</code>, and <code>P</code> (pseudogene). The reading frame used in Step&nbsp;4c sits in
+    <strong>field&nbsp;8</strong> (codon start).</p>
+  <figure>
+    <img src="images/imgt_ighd_headers.png" alt="IMGT IGHD FASTA headers showing the functionality field F and ORF">
+    <figcaption>Downloaded IMGT germline (IGHD shown). Field&nbsp;4 carries functionality
+      (here <code>F</code> and <code>ORF</code>); field&nbsp;8 carries the codon start.</figcaption>
+  </figure>
+  <pre><span class="lang">bash</span><code>mkdir -p $WORK/igblast/germline &amp;&amp; cd $WORK/igblast/germline</code></pre>
+
+  <h3>2a. Filter by functionality (optional)</h3>
+  <p>Whether to filter, and how strictly, depends on the application. Three common policies:</p>
+  <table>
+    <thead><tr><th>Policy</th><th>Keep</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr><td>Strict</td><td><code>F</code> only</td><td>only rigorously functional genes are wanted</td></tr>
+      <tr><td>Functional repertoire</td><td><code>F</code> + <code>ORF</code></td><td>ORF genes may still rearrange and be expressed, so they are retained for annotation</td></tr>
+      <tr><td>Unfiltered</td><td>everything</td><td>rarely advised: pseudogenes add spurious hits</td></tr>
+    </tbody>
+  </table>
+  <p>Any filter must be applied <strong>before</strong> Step&nbsp;2b, because <code>edit_imgt_file.pl</code> reduces the
+    header to the bare gene name and discards field&nbsp;4.</p>
+  <pre><span class="lang">bash</span><code># keep F and ORF, drop pseudogenes  (the policy used here)
+for seg in IGHV IGHD IGHJ; do
+  awk -F'|' '/^&gt;/{keep=($4=="F" || $4=="ORF")} keep' $seg.fasta &gt; ${seg}_keep.fasta
+done
+# strict alternative: change the test to  ($4=="F")</code></pre>
+  <p>This project kept <strong>F + ORF</strong> (only <code>P</code> removed): IGHV 28&nbsp;&rarr;&nbsp;25,
+    IGHD 23&nbsp;&rarr;&nbsp;23, IGHJ 18&nbsp;&rarr;&nbsp;16. The five removed are all <code>P</code> pseudogenes
+    (<code>IGHV1-32*01/02</code>, <code>IGHV2S1*01</code>, <code>IGHJ1-5*01</code>, <code>IGHJ2-5*01</code>).
+    The choice does not affect the ultralong result, which is dominated by IGHV1-7 and IGHJ2-4 (both <code>F</code>).</p>
+
+  <h3>2b. Clean headers and ungap with <code>edit_imgt_file.pl</code></h3>
+  <p>One step does both: the tool rewrites each header to the gene name and removes the IMGT gap dots
+    (<code>s/\.+//g</code> on sequence lines). Its output is therefore <strong>ungapped</strong>, which is exactly
+    the BLAST database input, since a search database cannot contain gaps. No separate ungapping step is needed.</p>
+  <pre><span class="lang">bash</span><code>for seg in IGHV IGHD IGHJ; do
+  edit_imgt_file.pl ${seg}_keep.fasta &gt; bovine_${seg}_ungapped.fasta
+done</code></pre>
+  <p><code>edit_imgt_file.pl</code> is in the IgBLAST <code>bin/</code> (or on PATH in the conda env). D and J are not
+    gapped, so for them "ungapped" only means clean headers.</p>
+
+  <h3>2c. Keep a gapped, clean-header V copy for the FR/CDR derivation</h3>
+  <p>The <code>.ndm</code> boundaries (Step&nbsp;4b) are measured on the IMGT-gapped V, but Step&nbsp;2b removed the gaps.
+    Make a parallel copy that cleans the header while keeping the dots: take field&nbsp;2 as the name and leave the
+    sequence lines untouched.</p>
+  <pre><span class="lang">bash</span><code>awk -F'|' '/^&gt;/{print "&gt;"$2; next}{print}' IGHV_keep.fasta &gt; bovine_IGHV_gapped.fasta</code></pre>
+  <p>Result: 25 IGHV / 23 IGHD / 16 IGHJ. <code>bovine_*_ungapped.fasta</code> feed the BLAST databases
+    (Steps&nbsp;3 and&nbsp;4a); <code>bovine_IGHV_gapped.fasta</code> feeds the boundary derivation (Step&nbsp;4b).
+    The kept sequences were verified byte-identical to the official <code>edit_imgt_file.pl</code> output on the
+    bovine subset.</p>
+
+  <!-- ================= 3 ================= -->
+  <h2 id="s3"><span class="n">3</span>Build the germline search databases (<code>-germline_db_V/D/J</code>)</h2>
+  <p>These identify which V, D and J gene each read came from.</p>
+  <pre><span class="lang">bash</span><code>mkdir -p $WORK/igblast/blastdb
+cd $WORK/igblast
+makeblastdb -parse_seqids -dbtype nucl -blastdb_version 4 \
+            -in germline/bovine_IGHV_ungapped.fasta -out blastdb/bovine_IGHV
+makeblastdb -parse_seqids -dbtype nucl -blastdb_version 4 \
+            -in germline/bovine_IGHD.fasta          -out blastdb/bovine_IGHD
+makeblastdb -parse_seqids -dbtype nucl -blastdb_version 4 \
+            -in germline/bovine_IGHJ.fasta          -out blastdb/bovine_IGHJ</code></pre>
+  <ul>
+    <li><code>-parse_seqids</code>: keeps gene names retrievable (required by IgBLAST; creates the
+      <code>.nsd/.nsi/.nog</code> index files).</li>
+    <li><code>-dbtype nucl</code>: nucleotide databases.</li>
+    <li><code>-blastdb_version 4</code>: required for igblastn 1.22, which rejects the newer v5 format with the
+      error <em>"Germline annotation database could not be found"</em>.</li>
+  </ul>
+
+  <!-- ================= 4 ================= -->
+  <h2 id="s4"><span class="n">4</span>Custom-organism annotation files (<code>internal_data/</code>)</h2>
+  <p>IgBLAST needs a separate internal copy of the V genes plus two annotation tables that fix where the CDR3
+    starts and ends.</p>
+  <pre><span class="lang">bash</span><code>mkdir -p $WORK/igblast/internal_data/bos_taurus
+cd $WORK/igblast</code></pre>
+
+  <h3>4a. Internal V annotation database</h3>
+  <p>Must be named <code>&lt;organism&gt;_V</code>, built with <code>-parse_seqids</code>, placed under
+    <code>internal_data/&lt;organism&gt;/</code>.</p>
+  <pre><span class="lang">bash</span><code>makeblastdb -parse_seqids -dbtype nucl -blastdb_version 4 \
+            -in germline/bovine_IGHV_ungapped.fasta \
+            -out internal_data/bos_taurus/bos_taurus_V</code></pre>
+  <p>Optional: only if you also run <code>igblastp</code>, build a protein version <code>bos_taurus_V</code> from the
+    translated V genes with <code>-dbtype prot</code>. <code>igblastn</code> does not use it.</p>
+
+  <h3>4b. V gene FR/CDR annotation file <code>bos_taurus.ndm.imgt</code></h3>
+  <p>Gives the framework and CDR boundaries per V gene, where the FR3 stop is the conserved Cys, i.e. the CDR3 start.
+    It is derived from the IMGT-gapped V sequences using IMGT unique numbering (FR1 codons 1 to 26, CDR1 27 to 38,
+    FR2 39 to 55, CDR2 56 to 65, FR3 66 to 104), converting each gapped boundary to an ungapped position.</p>
+  <pre><span class="lang">python</span><code># derive_ndm.py
+# python3 -I derive_ndm.py germline/bovine_IGHV_gapped.fasta &gt; internal_data/bos_taurus/bos_taurus.ndm.imgt
+import sys
+GAPPED = sys.argv[1]; CHAIN = "VH"
+ENDS = {"FWR1":26,"CDR1":38,"FWR2":55,"CDR2":65,"FWR3":104}   # last codon of each region (IMGT)
+def read_fasta(p):
+    d={}; n=None
+    for l in open(p):
+        if l.startswith("&gt;"): n=l[1:].split()[0]; d[n]=""
+        else: d[n]+=l.strip()
+    return d
+def ungapped_end(seq, codon):           # 1-based ungapped position of the region's last nt
+    return len(seq[:3*codon].replace(".",""))
+print("#gene/allele name, FWR1 start, FWR1 stop, CDR1 start, CDR1 stop, FWR2 start, FWR2 stop, "
+      "CDR2 start, CDR2 stop, FWR3 start, FWR3 stop, chain type, coding frame start.")
+print("#FWR/CDR positions are 1-based while the coding frame start positions are 0-based")
+for name, seq in read_fasta(GAPPED).items():
+    cols=[]; prev=0
+    for reg in ["FWR1","CDR1","FWR2","CDR2","FWR3"]:
+        end = ungapped_end(seq, ENDS[reg]); cols += [prev+1, end]; prev = end
+    print("\t".join(map(str, [name]+cols+[CHAIN, 0])))</code></pre>
+  <p>For the bovine IGHV1 subgroup this yields identical boundaries for every gene
+    (<code>1 75&nbsp; 76 99&nbsp; 100 150&nbsp; 151 171&nbsp; 172 285</code>), because the subgroup is co-linear through
+    FR3. Verified: nt 283 to 285 is the Cys codon (<code>TGT</code>) in all 25 genes.</p>
+
+  <h3>4c. J gene auxiliary file <code>bos_taurus_gl.aux</code></h3>
+  <p>Gives IgBLAST, per J gene, its reading frame and its CDR3 stop: the nucleotide just before the conserved J
+    tryptophan that opens FR4. The format matches <code>optional_file/human_gl.aux</code>.</p>
+  <pre><span class="lang">text</span><code>#gene/allele name, first coding frame start position, chain type, CDR3 stop, extra bps beyond J coding end.
+#All positions are 0-based
+IGHJ2-4*01   2   JH   13   1</code></pre>
+  <p>In frame 2, <code>IGHJ2-4*01</code> reads as <code>YVDA | WGQGLLVTVSS</code>: CDR3 contributes
+    <code>…YVDA</code>, FR4 begins at the <code>W</code>, so CDR3 stops at nt&nbsp;13, one base before the Trp.</p>
+  <p>Each J gene is annotated in two steps:</p>
+  <ol>
+    <li><strong>Reading frame.</strong> The raw IMGT header gives it in field&nbsp;8 (codon start, 1/2/3): e.g.
+      <code>…|IGHJ2-4*01|…|48 nt|3|…</code> gives codon start 3. Map <code>codon_start&nbsp;&minus;&nbsp;1</code> to
+      frame (1&rarr;0, 2&rarr;1, 3&rarr;2). Read field&nbsp;8 before <code>edit_imgt_file.pl</code> strips the header.</li>
+    <li><strong>CDR3 stop.</strong> Translate the J gene in that frame, locate the conserved J-tryptophan that opens
+      FR4 (equivalently, the FR4 tail <code>…TVSS</code>), and record the nucleotide one base before the Trp.</li>
+  </ol>
+  <p>All 16 J alleles were set and checked this way against the known FR4; the functional genes (e.g. IGHJ2-4)
+    are exact.</p>
+
+  <!-- ================= 5 ================= -->
+  <h2 id="s5"><span class="n">5</span>Place the files and point IgBLAST at them</h2>
+  <p>IgBLAST looks for <code>internal_data/</code> under the current directory or under <code>$IGDATA</code>, and for
+    the aux file wherever <code>-auxiliary_data</code> points.</p>
+  <pre><span class="lang">bash</span><code># point IGDATA at a directory holding internal_data/bos_taurus/ and optional_file/
+export IGDATA=$WORK/igblast/igdata
+mkdir -p $IGDATA/internal_data $IGDATA/optional_file
+cp -r $WORK/igblast/internal_data/bos_taurus $IGDATA/internal_data/
+cp     $WORK/igblast/bos_taurus_gl.aux        $IGDATA/optional_file/
+
+# also mirror into the conda share dir so it is found regardless of CWD
+cp -r $IGDATA/internal_data/bos_taurus $CONDA_PREFIX/share/igblast/internal_data/
+cp     $IGDATA/optional_file/bos_taurus_gl.aux $CONDA_PREFIX/share/igblast/optional_file/</code></pre>
+
+  <!-- ================= 6 ================= -->
+  <h2 id="s6"><span class="n">6</span>Run IgBLAST</h2>
+  <pre><span class="lang">bash</span><code>igblastn \
+  -germline_db_V   $WORK/igblast/blastdb/bovine_IGHV \
+  -germline_db_D   $WORK/igblast/blastdb/bovine_IGHD \
+  -germline_db_J   $WORK/igblast/blastdb/bovine_IGHJ \
+  -auxiliary_data  $IGDATA/optional_file/bos_taurus_gl.aux \
+  -organism        bos_taurus \
+  -domain_system   imgt \
+  -ig_seqtype      Ig \
+  -num_threads     8 \
+  -query           reads.fasta \
+  -outfmt          19 \
+  -out             reads_igblast.tsv</code></pre>
+  <ul>
+    <li><code>-organism bos_taurus</code>: selects the custom organism (must match the
+      <code>internal_data/bos_taurus/</code> folder name).</li>
+    <li><code>-domain_system imgt</code>: IMGT numbering (pairs with the <code>.ndm.imgt</code> file).</li>
+    <li><code>-outfmt 19</code>: AIRR-format TSV, one row per read (<code>v_call</code>, <code>d_call</code>,
+      <code>j_call</code>, <code>productive</code>, <code>fwr1_aa</code> to <code>fwr4_aa</code>,
+      <code>cdr1_aa</code> to <code>cdr3_aa</code>).</li>
+  </ul>
+  <figure>
+    <img src="images/airr_output.png" alt="AIRR-format IgBLAST output opened in a spreadsheet, one row per read">
+    <figcaption>AIRR output (<code>-outfmt 19</code>): one row per read, with gene calls, the productivity flags
+      (<code>productive</code>, <code>in_frame</code>, <code>stop_codon</code>, <code>v_frameshift</code>),
+      <code>cdr3_aa</code>, and the support (E-value) columns.</figcaption>
+  </figure>
+
+  <!-- ================= notes ================= -->
+  <h2 id="notes"><span class="n">&#9432;</span>Notes and reproducibility caveats</h2>
+  <div class="callout"><span class="ic">&#9888;&#65039;</span><div><b>BLASTDB version 4</b> is mandatory for igblastn 1.22 (Steps&nbsp;3 and&nbsp;4a). Omit it and IgBLAST cannot read the databases.</div></div>
+  <ul>
+    <li>The internal V database only needs the genes you annotated. One allele per gene is sufficient per the
+      IgBLAST docs; annotating all alleles, as here, is also valid.</li>
+    <li>The uniform FR/CDR boundaries hold only because the bovine IGHV1 subgroup is co-linear through FR3 (verified).
+      For an organism with indels across V genes, <code>derive_ndm.py</code> is run per gene (it already is) and the
+      boundaries will differ.</li>
+    <li>To reuse this for another ungulate (e.g. bison), repeat Steps&nbsp;2 to&nbsp;6 with that species' germline
+      V/D/J (from its genome assembly or OGRDB) and <code>-organism &lt;species&gt;</code>. The rest is unchanged.</li>
+  </ul>
+
+  <footer>
+    Built from the project methodology ·
+    <a href="https://ncbi.github.io/igblast/cook/How-to-set-up.html" target="_blank" rel="noopener">NCBI IgBLAST custom-organism protocol</a> ·
+    <a href="http://www.imgt.org/vquest/refseqh.html" target="_blank" rel="noopener">IMGT reference directory</a>
+  </footer>
+  </main>
+</div>
+
+<script>
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var map = {};
+    links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){a.classList.remove('active');});
+          if(map[e.target.id]) map[e.target.id].classList.add('active');
+        }
+      });
+    }, {rootMargin:'-20% 0px -70% 0px', threshold:0});
+    document.querySelectorAll('h2[id]').forEach(function(h){obs.observe(h);});
+  })();
+</script>
+</body>
+</html>
